@@ -1,28 +1,36 @@
+# config options
 CC=m68k-elf-gcc
 LD=m68k-elf-ld
 OBJDUMP=m68k-elf-objdump
 AS=m68k-elf-as
 OBJCOPY=m68k-elf-objcopy
-QEMU=/opt/m68k/bin/qemu-system-m68k
+#QEMU=/opt/m68k/bin/qemu-system-m68k
+QEMU="/cygdrive/c/Program Files/Qemu/qemu-system-m68k.exe"
 
-CFLAGS=-nostdlib -nostartfiles -nodefaultlibs --no-builtin
+# don't touch these...
+CFLAGS=-nostdinc -nostdlib -ffreestanding -nostartfiles -nodefaultlibs
 CFLAGS+=-m68000
 CFLAGS+=-Os
 CFLAGS+=-I.
+KERNEL_SRCS=$(wildcard *.c)
+KERNEL_OBJS=$(patsubst %.c,%.o,$(KERNEL_SRCS))
+AUTH_SRCS=$(wildcard auth/*.c)
+AUTH_OBJS=$(patsubst auth/%.c,auth/%.o,$(AUTH_SRCS))
 CMD_SRCS=$(wildcard commands/*.c)
 CMD_OBJS=$(patsubst commands/%.c,commands/%.o,$(CMD_SRCS))
 CRYPT_SRCS=$(wildcard crypto/*.c)
 CRYPT_OBJS=$(patsubst crypto/%.c,crypto/%.o,$(CRYPT_SRCS))
-AUTH_SRCS=$(wildcard auth/*.c)
-AUTH_OBJS=$(patsubst auth/%.c,auth/%.o,$(AUTH_SRCS))
-MATH_SRCS=$(wildcard math/*.c)
-MATH_OBJS=$(patsubst math/%.c,math/%.o,$(MATH_SRCS))
 
-math/%.o: math/%.c
-	${CC} ${CFLAGS} -o $@ -c $^
+# code
+main.srec: linker.x iv.o $(KERNEL_OBJS) $(CRYPT_OBJS) $(AUTH_OBJS) $(CMD_OBJS)
+	${LD} $(KERNEL_OBJS) $(CRYPT_OBJS) $(AUTH_OBJS) $(CMD_OBJS) iv.o -o main.srec -T linker.x -Map main.map
+	cp main.srec attach_gdb_to_this
+	${OBJCOPY} -O srec main.srec
 
+iv.o: iv.asm
+	${AS} -o iv.o iv.asm
 
-crypto/%.o: crypto/%.c
+%.o: %.c
 	${CC} ${CFLAGS} -o $@ -c $^
 
 auth/%.o: auth/%.c
@@ -31,46 +39,24 @@ auth/%.o: auth/%.c
 commands/%.o: commands/%.c
 	${CC} ${CFLAGS} -o $@ -c $^
 
-main: main.o iv.o screen.o exception.o kmem.o string.o tree.o shell.o linked_list.o linker.x $(MATH_OBJS) $(CRYPT_OBJS) $(AUTH_OBJS) $(CMD_OBJS)
-	${LD} main.o iv.o screen.o exception.o kmem.o string.o tree.o shell.o linked_list.o $(MATH_OBJS) $(CRYPT_OBJS) $(AUTH_OBJS) $(CMD_OBJS) -o main -T linker.x -Map main.map
-	cp main attach_gdb_to_this
-	${OBJCOPY} -O srec main
+crypto/%.o: crypto/%.c
+	${CC} ${CFLAGS} -o $@ -c $^
 
-main.o: main.c *.h
-	${CC} ${CFLAGS} -c main.c -o main.o
-
-linked_list.o: linked_list.h linked_list.c
-	${CC} ${CFLAGS} -c linked_list.c -o linked_list.o
-
-tree.o:	string.h tree.h tree.c kmem.h linked_list.h
-	${CC} ${CFLAGS} -c tree.c -o tree.o
-
-string.o: string.h string.c
-	${CC} ${CFLAGS} -c string.c -o string.o
-
-shell.o: shell.h shell.c string.h screen.h
-	${CC} ${CFLAGS} -c shell.c -o shell.o
-
-iv.o: iv.asm
-	${AS} -o iv.o iv.asm
-
-screen.o: screen.h screen.c
-	${CC} ${CFLAGS} -o screen.o -c screen.c
-
-exception.o: exception.c
-	${CC} ${CFLAGS} -o exception.o -c exception.c
-
-kmem.o: kmem.h kmem.c
-	${CC} -o kmem.o -c kmem.c
-
-disassemble: main
+# commands
+disassemble: main.srec
 	${OBJDUMP} -D attach_gdb_to_this
 
-run: main
-	${QEMU} -M cecs -nographic -kernel main -gdb tcp::1234
+run: main.srec
+	${QEMU} -M cecs -nographic -kernel main.srec -serial mon:telnet:127.0.0.1:4444,server,nowait -gdb tcp:127.0.0.1:1234
 
-debug: main
-	${QEMU} -M cecs -nographic -kernel main -S -gdb tcp::1234
+connect: main.srec
+	telnet 127.0.0.1 4444
+
+debug: main.srec
+	${QEMU} -M cecs -nographic -kernel main.srec -serial mon:telnet:127.0.0.1:4444,server,nowait -S -gdb tcp:127.0.0.1:1234
+	
+gdb: main.srec
+	./run_gdb
 
 clean:
-	rm screen.o iv.o attach_gdb_to_this main main.o kmem.o main.map string.o tree.o shell.o linked_list.o exception.o commands/*.o crypto/*.o auth/*.o math/*.o
+	-rm attach_gdb_to_this main.srec main.map *.o commands/*.o crypto/*.o auth/*.o

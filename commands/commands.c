@@ -7,11 +7,9 @@
 #include "commands.h"
 
 void initialize_commands() {
-	add_cmd("echo", echo);
-	add_cmd("help", help);
-	add_cmd("test", test);
-	add_cmd("test2", test);
-	add_cmd("memstatus", memstatus);
-	add_cmd("passwd", passwd);
+	add_cmd("calc", calc, calc_help);
+	add_cmd("echo", echo, echo_help);
+	add_cmd("help", help, help_help);
+	add_cmd("memstatus", memstatus, memstatus_help);
 	//Add your commands here
 }
