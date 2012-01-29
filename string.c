@@ -138,6 +138,18 @@ void *memmove(void *dst, const void *src, int size)
 	return dst;
 }
 
+void *memchr(const void *ptr, int value, int num) {
+	int i;
+
+	for (i=0;i<num;i++) {
+		if (((unsigned char *)ptr)[i] == (unsigned char)value) {
+			return ((unsigned char *)(ptr + i));
+		}
+	}
+
+	return NULL;
+}
+
 int strcmp(const char *s1, const char *s2)
 {
 	for(; *s1 == *s2; ++s1, ++s2)
@@ -180,6 +192,46 @@ char *strcpy(char *destination, const char *source) {
 	return destination;
 }
 
+char *strncpy(char *destination, const char *source, int num) {
+	int i;
+	for (i=0;i<num;i++) {
+		destination[i] = source[i];
+	}
+	destination[num] = 0;
+
+	return destination;
+}
+
+char *strcat(char *destination, const char *source) {
+	int i = 0;
+
+	while (destination[i] != 0)
+		i++;
+
+	while ((destination[i] = source[i]) != 0)
+		i++;
+
+	destination[i] = 0;
+
+	return destination;
+}
+
+char *strncat(char *destination, const char *source, int num) {
+	int i = 0;
+
+	while (destination[i] != 0)
+		i++;
+
+	while (i < num && source[i] != 0) {
+		destination[i] = source[i];
+		i++;
+	}
+
+	destination[i] = 0;
+
+	return destination;
+}
+
 int strtoint(const char *str)
 {
 	int i;
@@ -192,4 +244,54 @@ int strtoint(const char *str)
 	}
 	
 	return value;
+}
+
+int strcspn ( const char * s1, const char * s2 ) {
+	int ret=0;
+	while(*s1)
+	if(strchr(s2,*s1))
+		return ret;
+	else
+		s1++,ret++;
+	return ret;
+}
+
+char *strpbrk (const char *s1, const char *s2) {
+	while(*s1)
+		if(strchr(s2, *s1++))
+			return (char*)--s1;
+	return 0;
+}
+
+char *strrchr (const char *s, int c) {
+	char* ret=0;
+	do {
+		if( *s == (char)c )
+			ret=(char *)s;
+	} while(*s++);
+
+	return ret;
+}
+
+int strspn ( const char *s1, const char *s2) {
+	int ret=0;
+	while(*s1 && strchr(s2,*s1++))
+		ret++;
+
+	return ret;
+}
+
+char *strtok(char * str, const char * delim)
+{
+    static char* p=0;
+    if(str)
+        p=str;
+    else if(!p)
+        return 0;
+    str=p+strspn(p,delim);
+    p=str+strcspn(str,delim);
+    if(p==str)
+        return p=0;
+    p = *p ? *p=0,p+1 : 0;
+    return str;
 }

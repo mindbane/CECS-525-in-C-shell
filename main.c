@@ -1,5 +1,5 @@
-/*
- * M68K C Kernel
+/**
+ * M68K C Educational Kernel
  *
  * Written By:
  * Jordan Bray
@@ -9,34 +9,38 @@
  * Written for the M68K microprocessor that is used at the
  * University of Louisville for the CECS 525 Microcomputer
  * Design class.
- */
+ * */
 
-#include "screen.h"
-#include "kmem.h"
-#include "string.h"
-#include "shell.h"
-#include "tree.h"
-#include "commands/commands.h"
-#include "auth/authentication.h"
+#include <screen.h>
+#include <kmem.h>
+#include <string.h>
+#include <shell.h>
+#include <tree.h>
+#include <commands/commands.h>
+#include <auth/authentication.h>
 
-//Main kernel function
+/**
+ * Main kernel function
+ * */
 void main() {
 	//Must initialize the ACIA
 	initialize_acia();
 	
 	//Init kernel memory
 	kmeminit();
-	//Login
+	
+	//Setup Authentication
 	initAuth();
-	//Add users
+	
+	//Add Users
 	add_users();
 
 	//Welcome message
-	putstr("\nWelcome to the CECS-525 (unstable) Educational kernel!\nCreated by: Jordan Bray, Phillip 'Op' Flarsheim and Jimmy Murphy\n\n");
+	putstr("\nWelcome to the CECS-525 (unstable) Educational kernel!\n\
+Created by: Jordan Bray, Phillip 'Op' Flarsheim and Jimmy Murphy\n\n");
 	initialize_shell();
 
 	while (1) {
-		//Login message
 		putstr("Please login...\n");
 
 		//Check login
